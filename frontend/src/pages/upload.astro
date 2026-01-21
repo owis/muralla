@@ -1,0 +1,276 @@
+---
+import Layout from "../layouts/Layout.astro";
+
+const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:3001";
+---
+
+<Layout title="Subir Imagen">
+  <div class="min-h-screen bg-gradient-to-br from-dark via-slate-900 to-dark flex items-center justify-center p-4">
+    <div class="w-full max-w-md">
+      <div class="glass rounded-3xl p-8 shadow-2xl">
+        <!-- Header -->
+        <div class="text-center mb-8">
+          <div class="w-16 h-16 bg-primary/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-8 w-8 text-primary"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+              ></path>
+            </svg>
+          </div>
+          <h1 class="text-2xl font-bold text-white mb-2">Comparte tu momento</h1>
+          <p class="text-white/60 text-sm">Sube una imagen para mostrarla en la pantalla</p>
+        </div>
+
+        <!-- Form -->
+        <form id="upload-form" class="space-y-5" enctype="multipart/form-data">
+          <!-- Name -->
+          <div>
+            <label for="nombre" class="block text-sm font-medium text-white/80 mb-2">
+              Tu nombre *
+            </label>
+            <input
+              type="text"
+              id="nombre"
+              name="nombre"
+              required
+              class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent transition-all"
+              placeholder="Escribe tu nombre"
+            />
+          </div>
+
+          <!-- Phone -->
+          <div>
+            <label for="telefono" class="block text-sm font-medium text-white/80 mb-2">
+              Teléfono (opcional)
+            </label>
+            <input
+              type="tel"
+              id="telefono"
+              name="telefono"
+              class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent transition-all"
+              placeholder="+56 9 1234 5678"
+            />
+          </div>
+
+          <!-- Text -->
+          <div>
+            <label for="texto" class="block text-sm font-medium text-white/80 mb-2">
+              Mensaje o descripción
+            </label>
+            <textarea
+              id="texto"
+              name="texto"
+              rows="3"
+              class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent transition-all resize-none"
+              placeholder="Escribe un mensaje para mostrar..."
+            ></textarea>
+          </div>
+
+          <!-- Image Upload -->
+          <div>
+            <label class="block text-sm font-medium text-white/80 mb-2">
+              Imagen *
+            </label>
+            <div
+              id="drop-zone"
+              class="relative border-2 border-dashed border-white/20 rounded-xl p-6 text-center cursor-pointer hover:border-primary/50 hover:bg-white/5 transition-all"
+            >
+              <input
+                type="file"
+                id="imagen"
+                name="imagen"
+                accept="image/*"
+                required
+                class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              />
+              <div id="upload-placeholder">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="mx-auto h-10 w-10 text-white/40 mb-3"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                  ></path>
+                </svg>
+                <p class="text-white/60 text-sm">
+                  Arrastra una imagen o <span class="text-primary">selecciona</span>
+                </p>
+                <p class="text-white/40 text-xs mt-1">PNG, JPG, GIF hasta 10MB</p>
+              </div>
+              <div id="preview-container" class="hidden">
+                <img id="image-preview" class="max-h-40 mx-auto rounded-lg" />
+                <p id="file-name" class="text-white/60 text-sm mt-2"></p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <button
+            type="submit"
+            id="submit-btn"
+            class="w-full py-4 bg-primary hover:bg-primary/90 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+          >
+            <span id="btn-text">Subir imagen</span>
+            <span id="btn-loading" class="hidden">
+              <svg class="animate-spin h-5 w-5 mx-auto" viewBox="0 0 24 24">
+                <circle
+                  class="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  stroke-width="4"
+                  fill="none"
+                ></circle>
+                <path
+                  class="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+            </span>
+          </button>
+        </form>
+
+        <!-- Success Message -->
+        <div
+          id="success-message"
+          class="hidden text-center py-8"
+        >
+          <div class="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-8 w-8 text-green-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M5 13l4 4L19 7"
+              ></path>
+            </svg>
+          </div>
+          <h3 class="text-xl font-bold text-white mb-2">¡Imagen enviada!</h3>
+          <p class="text-white/60 text-sm mb-4">Tu imagen aparecerá en pantalla pronto</p>
+          <button
+            id="upload-another"
+            class="text-primary hover:underline text-sm font-medium"
+          >
+            Subir otra imagen
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script define:vars={{ API_URL }}>
+    const form = document.getElementById("upload-form")
+    const submitBtn = document.getElementById("submit-btn")
+    const btnText = document.getElementById("btn-text")
+    const btnLoading = document.getElementById("btn-loading")
+    const successMessage = document.getElementById("success-message")
+    const uploadAnother = document.getElementById("upload-another")
+    const imageInput = document.getElementById("imagen")
+    const uploadPlaceholder = document.getElementById("upload-placeholder")
+    const previewContainer = document.getElementById("preview-container")
+    const imagePreview = document.getElementById("image-preview")
+    const fileName = document.getElementById("file-name")
+    const dropZone = document.getElementById("drop-zone")
+
+    // Image preview
+    imageInput.addEventListener("change", (e) => {
+      const file = e.target.files[0]
+      if (file) {
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          imagePreview.src = e.target.result
+          fileName.textContent = file.name
+          uploadPlaceholder.classList.add("hidden")
+          previewContainer.classList.remove("hidden")
+        }
+        reader.readAsDataURL(file)
+      }
+    })
+
+    // Drag and drop
+    dropZone.addEventListener("dragover", (e) => {
+      e.preventDefault()
+      dropZone.classList.add("border-primary", "bg-white/5")
+    })
+
+    dropZone.addEventListener("dragleave", () => {
+      dropZone.classList.remove("border-primary", "bg-white/5")
+    })
+
+    dropZone.addEventListener("drop", (e) => {
+      e.preventDefault()
+      dropZone.classList.remove("border-primary", "bg-white/5")
+      const file = e.dataTransfer.files[0]
+      if (file && file.type.startsWith("image/")) {
+        imageInput.files = e.dataTransfer.files
+        imageInput.dispatchEvent(new Event("change"))
+      }
+    })
+
+    // Form submission
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault()
+
+      submitBtn.disabled = true
+      btnText.classList.add("hidden")
+      btnLoading.classList.remove("hidden")
+
+      const formData = new FormData(form)
+
+      try {
+        const response = await fetch(`${API_URL}/api/upload`, {
+          method: "POST",
+          body: formData,
+        })
+
+        const data = await response.json()
+
+        if (data.success) {
+          form.classList.add("hidden")
+          successMessage.classList.remove("hidden")
+        } else {
+          alert(data.error || "Error al subir la imagen")
+        }
+      } catch (error) {
+        console.error("Error:", error)
+        alert("Error de conexión. Intenta de nuevo.")
+      } finally {
+        submitBtn.disabled = false
+        btnText.classList.remove("hidden")
+        btnLoading.classList.add("hidden")
+      }
+    })
+
+    // Upload another
+    uploadAnother.addEventListener("click", () => {
+      form.reset()
+      uploadPlaceholder.classList.remove("hidden")
+      previewContainer.classList.add("hidden")
+      form.classList.remove("hidden")
+      successMessage.classList.add("hidden")
+    })
+  </script>
+</Layout>

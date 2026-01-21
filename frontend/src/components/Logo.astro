@@ -1,0 +1,28 @@
+---
+const { src = "/logo.svg", alt = "Event Logo" } = Astro.props;
+---
+
+<div class="logo-container fixed top-6 left-6 z-50">
+  <img
+    src="/18s.png"
+    alt=""
+    class="h-72 w-auto object-contain filter drop-shadow-lg transition-transform duration-300 hover:scale-105"
+  />
+</div>
+
+<style>
+  .logo-container {
+    animation: fadeInDown 0.8s ease-out;
+  }
+
+  @keyframes fadeInDown {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+</style>

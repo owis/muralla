@@ -1,0 +1,108 @@
+import React, { useEffect, useState } from "react";
+
+interface Image {
+  uid: string;
+  nombre: string;
+  url: string;
+  texto: string;
+  timestamp: string;
+  estado?: number;
+}
+
+interface AdminPanelProps {
+  apiUrl: string;
+}
+
+export default function AdminPanel({ apiUrl }: AdminPanelProps) {
+  const [images, setImages] = useState<Image[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchImages = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/api/images?all=true`);
+      const data = await response.json();
+      if (data.success) {
+        setImages(data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching images:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchImages();
+  }, [apiUrl]);
+
+  const toggleStatus = async (uid: string, currentStatus: number) => {
+    try {
+      const newStatus = currentStatus === 1 ? 0 : 1;
+      const response = await fetch(`${apiUrl}/api/images/${uid}/status`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ estado: newStatus }),
+      });
+
+      if (response.ok) {
+        setImages((prev) =>
+          prev.map((img) =>
+            img.uid === uid ? { ...img, estado: newStatus } : img
+          )
+        );
+      } else {
+        console.error("Failed to update status");
+      }
+    } catch (error) {
+      console.error("Error updating status:", error);
+    }
+  };
+
+  if (loading) return <div className="text-white text-center p-10">Cargando...</div>;
+
+  return (
+    <div className="container mx-auto p-4 overflow-y-auto h-screen">
+      <h1 className="text-3xl font-bold text-white mb-6">Administración de Imágenes</h1>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-20">
+        {images.map((image) => (
+          <div
+            key={image.uid}
+            className={`bg-white rounded-lg overflow-hidden shadow-lg transition-opacity ${
+              image.estado === 0 ? "opacity-50" : "opacity-100"
+            }`}
+          >
+            <div className="relative h-48">
+              <img
+                src={`${apiUrl}${image.url}`}
+                alt={image.nombre}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute top-2 right-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs">
+                {image.estado === 1 ? "Visible" : "Oculto"}
+              </div>
+            </div>
+            <div className="p-4">
+              <h3 className="font-bold text-lg truncate">{image.nombre}</h3>
+              <p className="text-gray-600 text-sm truncate">{image.texto}</p>
+              <p className="text-gray-400 text-xs mt-2">
+                {new Date(image.timestamp).toLocaleString()}
+              </p>
+              <button
+                onClick={() => toggleStatus(image.uid, image.estado ?? 1)}
+                className={`mt-4 w-full py-2 px-4 rounded font-bold text-white transition-colors ${
+                  image.estado === 1
+                    ? "bg-red-500 hover:bg-red-600"
+                    : "bg-green-500 hover:bg-green-600"
+                }`}
+              >
+                {image.estado === 1 ? "Ocultar" : "Mostrar"}
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

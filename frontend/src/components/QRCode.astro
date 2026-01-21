@@ -1,0 +1,60 @@
+---
+// interface Props {
+//   url?: string;
+// }
+const { url = import.meta.env.PUBLIC_UPLOAD_URL } = Astro.props;
+---
+
+<div class="qr-container fixed bottom-6 right-6 z-50">
+  <div
+    class="glass rounded-2xl p-4 flex flex-col items-center gap-3 transition-transform duration-300 hover:scale-105"
+  >
+    <div id="qr-code" class="bg-white rounded-lg p-2" data-url={url}>
+      <!-- QR se genera dinámicamente -->
+      <canvas id="qr-canvas" width="120" height="120"></canvas>
+    </div>
+    <div class="text-center">
+      <p class="text-white/90 text-xs font-semibold">
+        Escanea para participar!
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+  import QRCode from "qrcode";
+
+  const qrCodeContainer = document.getElementById("qr-code");
+  const canvas = document.getElementById("qr-canvas");
+  const url = qrCodeContainer?.dataset.url;
+
+  if (canvas && url) {
+    QRCode.toCanvas(canvas, url, {
+      width: 120,
+      margin: 1,
+      color: {
+        dark: "#0f172a",
+        light: "#ffffff",
+      },
+    }).catch((err) => {
+      console.error("QR generation error:", err);
+    });
+  }
+</script>
+
+<style>
+  .qr-container {
+    animation: fadeInUp 0.8s ease-out 0.4s both;
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+</style>

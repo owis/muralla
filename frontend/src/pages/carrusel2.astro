@@ -1,0 +1,150 @@
+---
+const apiUrl = import.meta.env.PUBLIC_API_URL;
+---
+
+<div class="carousel-viewport">
+  <div id="stars-bg" class="stars-layer"></div>
+  <div id="scene" class="scene-3d"></div>
+</div>
+
+<style is:global>
+  :root {
+    --img-width: 600px;
+    --speed: 8s;
+    --spawn-rate: 5200ms;
+  }
+
+  .carousel-viewport {
+    @apply relative w-full h-screen bg-black overflow-hidden flex items-center justify-center;
+    perspective: 1000px;
+  }
+
+  .scene-3d {
+    @apply relative w-full h-full flex items-center justify-center;
+    transform-style: preserve-3d;
+  }
+
+  .polaroid-card {
+    @apply absolute bg-white p-3 pb-8 shadow-2xl flex flex-col;
+    width: var(--img-width);
+    height: auto;
+    will-change: transform, opacity, filter;
+    pointer-events: none;
+    backface-visibility: hidden;
+  }
+
+  .polaroid-card img {
+    @apply w-full h-auto border border-gray-100;
+    display: block;
+  }
+
+  .polaroid-label {
+    @apply mt-3 text-gray-700 font-serif text-center text-base truncate italic;
+  }
+
+  .stars-layer {
+    @apply absolute inset-0 opacity-20 pointer-events-none;
+    background-image: radial-gradient(circle, white 1px, transparent 1px);
+    background-size: 80px 80px;
+  }
+</style>
+
+<script define:vars={{ apiUrl }}>
+  let images = [];
+  let imgIndex = 0;
+  const scene = document.getElementById("scene");
+
+  async function fetchImages() {
+    try {
+      const response = await fetch(`${apiUrl}/api/images?all=true`);
+      const data = await response.json();
+      if (data.success) {
+        images = data.data.filter((img) => img.estado !== 0);
+        if (images.length > 0) startHyperdrive();
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  }
+
+  function createPolaroid(imageInfo) {
+    const card = document.createElement("div");
+    card.className = "polaroid-card";
+
+    const randomRot = (Math.random() * 30 - 15).toFixed(2);
+    const angle = Math.random() * Math.PI * 2;
+    const scatter = 600 + Math.random() * 400;
+    const targetX = Math.cos(angle) * scatter;
+    const targetY = Math.sin(angle) * scatter;
+
+    card.innerHTML = `
+      <img src="${apiUrl}${imageInfo.url}" alt="${imageInfo.nombre}" />
+      <p class="polaroid-label">${imageInfo.nombre}</p>
+    `;
+
+    scene.appendChild(card);
+    const speed =
+      parseInt(
+        getComputedStyle(document.documentElement).getPropertyValue("--speed"),
+      ) * 1000;
+
+    // ANIMACIÓN CON MOTION BLUR
+    card.animate(
+      [
+        {
+          transform: `translate3d(-50%, -50%, -2500px) scale(0) rotate(${randomRot}deg)`,
+          opacity: 0,
+          filter: "blur(0px)",
+          offset: 0,
+        },
+        {
+          opacity: 1,
+          filter: "blur(1px)",
+          offset: 0.2,
+        },
+        {
+          opacity: 1,
+          filter: "blur(0px)",
+          offset: 0.5,
+        },
+
+        {
+          opacity: 0.8,
+          filter: "blur(0px)",
+          offset: 0.8,
+        },
+        {
+          // Aumenta el blur al final para simular velocidad de paso
+          transform: `translate3d(calc(-50% + ${targetX}px), calc(-50% + ${targetY}px), 800px) scale(1.4) rotate(${randomRot}deg)`,
+          opacity: 0,
+          filter: "blur(8px)",
+          offset: 1,
+        },
+      ],
+      {
+        duration: speed,
+        easing: "cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+      },
+    ).onfinish = () => card.remove();
+  }
+
+  function startHyperdrive() {
+    const spawnRate = parseInt(
+      getComputedStyle(document.documentElement).getPropertyValue(
+        "--spawn-rate",
+      ),
+    );
+    // Primera ejecución inmediata
+    createPolaroid(images[imgIndex]);
+    imgIndex = (imgIndex + 1) % images.length;
+
+    setInterval(() => {
+      if (images.length > 0) {
+        createPolaroid(images[imgIndex]);
+        imgIndex = (imgIndex + 1) % images.length;
+      }
+    }, spawnRate);
+  }
+
+  fetchImages();
+</script>

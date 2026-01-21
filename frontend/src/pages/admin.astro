@@ -1,0 +1,12 @@
+---
+import Layout from "../layouts/Layout.astro";
+import AdminPanel from "../components/AdminPanel";
+
+const API_URL = import.meta.env.PUBLIC_API_URL;
+---
+
+<Layout title="Administración - Muralla">
+  <main class="w-full h-screen bg-gray-900 overflow-hidden">
+    <AdminPanel client:load apiUrl={API_URL} />
+  </main>
+</Layout>

@@ -1,0 +1,101 @@
+---
+const { src, alt = "", texto = "", nombre = "", isActive = false } = Astro.props;
+---
+
+<div class={`slide-item absolute inset-0 flex items-center justify-center ${isActive ? 'active' : ''}`}>
+  <div class="slide-content w-full h-full flex items-center px-8 lg:px-16">
+    <!-- Text Section - Left Side -->
+    <div class="slide-text flex-1 max-w-lg z-10 pr-8">
+      <div class="text-container opacity-0">
+        {
+          nombre && (
+            <p class="text-primary text-sm font-semibold uppercase tracking-wider mb-2">{nombre}</p>
+          )
+        }
+        {
+          texto && (
+            <p class="text-white text-2xl lg:text-4xl font-display font-bold leading-tight text-shadow">
+              {texto}
+            </p>
+          )
+        }
+      </div>
+    </div>
+
+    <!-- Image Section - Right Side -->
+    <div class="slide-image flex-1 flex justify-end items-center">
+      <div class="image-wrapper relative">
+        <img
+          src={src || "/placeholder.svg"}
+          alt={alt}
+          class="max-h-[80vh] max-w-full object-contain rounded-2xl shadow-2xl"
+          loading="lazy"
+        />
+        <div class="absolute inset-0 rounded-2xl ring-1 ring-white/10"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .slide-item {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateZ(-1000px) translateX(200px) scale(0.3);
+    transition: none;
+  }
+
+  .slide-item.active {
+    opacity: 1;
+    pointer-events: auto;
+    animation: slideIn3D 2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  }
+
+  .slide-item.exiting {
+    animation: fadeOutSlide 1s ease-in forwards;
+  }
+
+  .slide-item.active .text-container {
+    animation: textReveal 0.8s ease-out 1.8s forwards;
+  }
+
+  @keyframes slideIn3D {
+    0% {
+      opacity: 0;
+      transform: translateZ(-1000px) translateX(200px) scale(0.3);
+    }
+    60% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 1;
+      transform: translateZ(0) translateX(0) scale(1);
+    }
+  }
+
+  @keyframes fadeOutSlide {
+    0% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: scale(1.05) translateZ(100px);
+    }
+  }
+
+  @keyframes textReveal {
+    0% {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .image-wrapper {
+    transform-style: preserve-3d;
+  }
+</style>

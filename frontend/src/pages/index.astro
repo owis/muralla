@@ -1,0 +1,32 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Logo from "../components/Logo.astro";
+import Counter from "../components/Counter.astro";
+import VideoBackground from "../components/VideoBackground.astro";
+import QRCode from "../components/QRCode.astro";
+import Slideshow from "../components/Slideshow";
+
+const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:3001";
+const WS_URL = import.meta.env.PUBLIC_WS_URL || "ws://localhost:3001";
+const UPLOAD_URL =
+  import.meta.env.PUBLIC_UPLOAD_URL || "http://localhost:4321/upload";
+---
+
+<Layout title="3D Slideshow Interactivo">
+  <!-- Video/Animated Background -->
+  <VideoBackground />
+
+  <!-- Logo - Top Left -->
+  <Logo src="/logo.svg" alt="Logo del Evento" />
+
+  <!-- Counter - Top Right -->
+  <Counter current={1} total={0} />
+
+  <!-- Main Slideshow Area -->
+  <main class="relative w-full h-screen perspective-container">
+    <Slideshow client:load apiUrl={API_URL} wsUrl={WS_URL} />
+  </main>
+
+  <!-- QR Code - Bottom Right -->
+  <QRCode url={UPLOAD_URL} />
+</Layout>

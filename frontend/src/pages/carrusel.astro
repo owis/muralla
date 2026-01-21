@@ -1,0 +1,126 @@
+---
+const apiUrl = import.meta.env.PUBLIC_API_URL;
+---
+
+<div
+  class="relative w-full h-screen bg-black overflow-hidden flex items-center justify-center"
+>
+  <div class="absolute inset-0 opacity-30 pointer-events-none" id="stars-bg">
+  </div>
+
+  <div
+    id="scene"
+    class="relative w-full h-full [perspective:1000px] [transform-style:preserve-3d]"
+  >
+  </div>
+</div>
+
+<script define:vars={{ apiUrl }}>
+  let images = [];
+  const scene = document.getElementById("scene");
+  const duration = 6000; // Milisegundos que tarda una imagen en recorrer todo el camino
+  const interval = 3000; // Cada cuánto tiempo sale una nueva imagen
+
+  async function fetchImages() {
+    try {
+      const response = await fetch(`${apiUrl}/api/images?all=true`);
+      const data = await response.json();
+      if (data.success) {
+        images = data.data.filter((img) => img.estado !== 0);
+        if (images.length > 0) {
+          startHyperdrive();
+        }
+      }
+    } catch (error) {
+      console.error("Error cargando imágenes:", error);
+    }
+  }
+
+  function createStarshipImage(imageInfo, index) {
+    const container = document.createElement("div");
+
+    // Clases de Tailwind para el estilo inicial
+    // Parten desde el centro (absolute inset-0 m-auto), invisibles y pequeñas
+    container.className = `
+      absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
+      w-64 h-80 md:w-80 md:h-[450px]
+      rounded-lg border-2 border-white/30 shadow-[0_0_50px_rgba(255,255,255,0.2)]
+      overflow-hidden opacity-0 pointer-events-none
+    `;
+
+    container.innerHTML = `
+      <img src="${apiUrl}${imageInfo.url}" class="w-full h-full object-cover" />
+      <div class="absolute bottom-0 w-full p-4 bg-gradient-to-t from-black/80 to-transparent">
+        <p class="text-white text-center font-bold tracking-widest uppercase">${imageInfo.nombre}</p>
+      </div>
+    `;
+
+    scene.appendChild(container);
+
+    // Animación con Web Animations API (más fluido que CSS puro para loops infinitos)
+    const animation = container.animate(
+      [
+        {
+          transform: "translate(-50%, -50%) translateZ(-2000px) scale(0.1)",
+          opacity: 0,
+        },
+        {
+          opacity: 1,
+          offset: 0.2,
+        },
+        {
+          transform: "translate(-50%, -50%) translateZ(1000px) scale(3)",
+          opacity: 0,
+          offset: 1,
+        },
+      ],
+      {
+        duration: duration,
+        easing: "ease-in",
+      },
+    );
+
+    // Limpiar el DOM cuando la animación termine
+    animation.onfinish = () => container.remove();
+  }
+
+  function startHyperdrive() {
+    let imgIndex = 0;
+
+    // Loop infinito (Autoplay)
+    setInterval(() => {
+      createStarshipImage(images[imgIndex]);
+
+      imgIndex++;
+      if (imgIndex >= images.length) imgIndex = 0;
+    }, interval);
+  }
+
+  // Efecto visual de fondo de estrellas (Canvas simple)
+  function initStars() {
+    const bg = document.getElementById("stars-bg");
+    for (let i = 0; i < 200; i++) {
+      const star = document.createElement("div");
+      const size = Math.random() * 2 + "px";
+      star.style.position = "absolute";
+      star.style.width = size;
+      star.style.height = size;
+      star.style.backgroundColor = "white";
+      star.style.top = Math.random() * 100 + "%";
+      star.style.left = Math.random() * 100 + "%";
+      star.style.borderRadius = "50%";
+      bg.appendChild(star);
+    }
+  }
+
+  initStars();
+  fetchImages();
+</script>
+
+<style>
+  /* Forzamos que el contenedor mantenga las dimensiones para el centrado 3D */
+  #scene {
+    transform-style: preserve-3d;
+    will-change: transform;
+  }
+</style>
