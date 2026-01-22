@@ -14,24 +14,36 @@ export async function uploadImage(req, res) {
     let file = req.file;
     let filename;
 
-    // Caso 1: Subida vía Bot (JSON con URL de foto)
+    // Caso 1: Subida vía Bot (JSON con URL de foto o Base64)
     if (!file && foto) {
       try {
-        const response = await fetch(foto);
-        if (!response.ok) throw new Error("No se pudo descargar la imagen");
-        
-        const buffer = await response.arrayBuffer();
-        const ext = path.extname(foto).split("?")[0] || ".jpg"; // Intenta adivinar extensión o default .jpg
+        let buffer;
+        let ext = ".jpg";
+
+        // Si es URL (http/https)
+        if (foto.startsWith("http")) {
+          const response = await fetch(foto);
+          if (!response.ok) throw new Error("No se pudo descargar la imagen");
+          buffer = await response.arrayBuffer();
+          ext = path.extname(foto).split("?")[0] || ".jpg";
+        } 
+        // Asumimos que es Base64
+        else {
+          // Si viene con prefijo data URI, lo quitamos
+          const base64Data = foto.replace(/^data:image\/\w+;base64,/, "");
+          buffer = Buffer.from(base64Data, "base64");
+        }
+
         filename = `${uuidv4()}${ext}`;
         const savePath = path.join(__dirname, "../public/uploads/", filename);
         
-        fs.writeFileSync(savePath, Buffer.from(buffer));
+        fs.writeFileSync(savePath, Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer));
         
         // Simulamos el objeto file para mantener consistencia
         file = { filename };
       } catch (err) {
-        console.error("Error descargando imagen del bot:", err);
-        return res.status(400).json({ error: "Error al procesar la URL de la imagen" });
+        console.error("Error procesando imagen del bot:", err);
+        return res.status(400).json({ error: "Error al procesar la imagen (URL o Base64 inválido)" });
       }
     }
 
