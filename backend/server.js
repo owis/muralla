@@ -52,27 +52,32 @@ if (!fs.existsSync(uploadsDir)) {
 }
 
 // Middleware
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "https://muralla.creceideas.cl");
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  res.header(
-    "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content-Type, Accept, Authorization",
-  );
-  res.header("Access-Control-Allow-Credentials", "true");
-
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
-  }
-  next();
-});
-
-/* 
 app.use(
   cors({
     origin: function (origin, callback) {
-...
-*/
+      const allowedOrigins = [
+        "https://muralla.creceideas.cl",
+        "http://muralla.creceideas.cl",
+        "http://localhost:4321",
+        "http://localhost:3000",
+      ];
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      
+      if (allowedOrigins.indexOf(origin) !== -1 || process.env.FRONTEND_URL === origin) {
+        callback(null, true);
+      } else {
+        console.log("Blocked by CORS:", origin);
+        // For development, you might want to temporarily allow all:
+        // callback(null, true); 
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
+  })
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

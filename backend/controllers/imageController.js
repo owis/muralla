@@ -16,7 +16,6 @@ export async function uploadImage(req, res) {
 
     // Caso 1: Subida vía Bot (JSON con URL de foto o Base64)
     if (!file && foto) {
-      console.log("Procesando imagen desde bot..."); // Log de confirmación
       try {
         let buffer;
         let ext = ".jpg";
