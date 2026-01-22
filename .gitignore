@@ -33,3 +33,6 @@ next-env.d.ts
 # Astro
 .astro/
 */dist/*
+
+# carpetas
+bot/auth_info
