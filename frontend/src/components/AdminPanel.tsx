@@ -49,8 +49,8 @@ export default function AdminPanel({ apiUrl }: AdminPanelProps) {
       if (response.ok) {
         setImages((prev) =>
           prev.map((img) =>
-            img.uid === uid ? { ...img, estado: newStatus } : img
-          )
+            img.uid === uid ? { ...img, estado: newStatus } : img,
+          ),
         );
       } else {
         console.error("Failed to update status");
@@ -60,7 +60,28 @@ export default function AdminPanel({ apiUrl }: AdminPanelProps) {
     }
   };
 
-  if (loading) return <div className="text-white text-center p-10">Cargando...</div>;
+  const deleteImage = async (uid: string) => {
+    if (!window.confirm("¿Estás seguro de que quieres eliminar esta imagen?")) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${apiUrl}/api/images/${uid}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        setImages((prev) => prev.filter((img) => img.uid !== uid));
+      } else {
+        console.error("Failed to delete image");
+      }
+    } catch (error) {
+      console.error("Error deleting image:", error);
+    }
+  };
+
+  if (loading)
+    return <div className="text-white text-center p-10">Cargando...</div>;
 
   return (
     <div className="container mx-auto p-4 overflow-y-auto h-screen">
@@ -99,6 +120,15 @@ export default function AdminPanel({ apiUrl }: AdminPanelProps) {
               >
                 {image.estado === 1 ? "Ocultar" : "Mostrar"}
               </button>
+
+              {image.estado === 0 && (
+                <button
+                  onClick={() => deleteImage(image.uid)}
+                  className="mt-2 w-full py-2 px-4 rounded font-bold text-white transition-colors bg-gray-700 hover:bg-gray-800"
+                >
+                  Eliminar
+                </button>
+              )}
             </div>
           </div>
         ))}

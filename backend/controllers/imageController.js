@@ -163,3 +163,43 @@ export async function updateImageStatus(req, res) {
     res.status(500).json({ error: "Error al actualizar el estado" });
   }
 }
+
+export async function deleteImage(req, res) {
+  try {
+    const { uid } = req.params;
+
+    // Primero obtenemos la URL para poder borrar el archivo
+    const [rows] = await pool.execute("SELECT url FROM images WHERE uid = ?", [
+      uid,
+    ]);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Imagen no encontrada" });
+    }
+
+    const imageUrl = rows[0].url;
+
+    // Eliminar de la base de datos
+    await pool.execute("DELETE FROM images WHERE uid = ?", [uid]);
+
+    // Eliminar archivo físico
+    if (imageUrl) {
+      const filename = path.basename(imageUrl);
+      const filePath = path.join(__dirname, "../public/uploads/", filename);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    }
+
+    // Broadcast update
+    const [activeImages] = await pool.execute(
+      "SELECT uid, nombre, url, texto, timestamp FROM images WHERE estado = 1 ORDER BY timestamp ASC",
+    );
+    broadcastMessage("UPDATE_IMAGES", activeImages);
+
+    res.json({ success: true, message: "Imagen eliminada correctamente" });
+  } catch (error) {
+    console.error("Error deleting image:", error);
+    res.status(500).json({ error: "Error al eliminar la imagen" });
+  }
+}

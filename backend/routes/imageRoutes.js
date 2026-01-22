@@ -8,6 +8,7 @@ import {
   getAllImages,
   getImageCount,
   updateImageStatus,
+  deleteImage,
 } from "../controllers/imageController.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -48,5 +49,6 @@ router.post("/upload", upload.single("imagen"), uploadImage);
 router.get("/images", getAllImages);
 router.get("/images/count", getImageCount);
 router.put("/images/:uid/status", updateImageStatus);
+router.delete("/images/:uid", deleteImage);
 
 export default router;
