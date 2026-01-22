@@ -46,6 +46,26 @@ app.use("/uploads", express.static(join(__dirname, "public/uploads")));
 // Routes
 app.use("/api", imageRoutes);
 
+// Debug DB Route (Temporary)
+app.get("/api/debug-db", async (req, res) => {
+  try {
+    const [rows] = await import("./config/database.js").then((m) =>
+      m.default.execute("SHOW TABLES"),
+    );
+    const [columns] = await import("./config/database.js").then((m) =>
+      m.default.execute("SHOW COLUMNS FROM images"),
+    );
+    res.json({ success: true, tables: rows, columns: columns });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      code: error.code,
+      sqlMessage: error.sqlMessage,
+    });
+  }
+});
+
 // Health check
 app.get("/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
