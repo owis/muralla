@@ -226,6 +226,14 @@ const startBot = async () => {
         return;
       }
 
+      // Check if the text (not from image caption) contains the word "hola"
+      if (text && text.toLowerCase().includes("hola")) {
+        await sock.sendMessage(remoteJid, {
+          text: `¡Hola ${pushName}! 👋\n\nSoy un *bot* que te ayudara a enviar imágenes con dedicatoria.\n\nPara comenzar:\n1. Envía una imagen 📸\n2. Responde si quieres agregar un mensaje\n3. ¡Listo! Tu imagen y mensaje se guardarán`,
+        });
+        return;
+      }
+
       // Manejo de Imágenes
       if (isImage) {
         try {
