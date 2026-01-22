@@ -16,6 +16,7 @@ export async function uploadImage(req, res) {
 
     // Caso 1: Subida vía Bot (JSON con URL de foto o Base64)
     if (!file && foto) {
+      console.log("Procesando imagen desde bot..."); // Log de confirmación
       try {
         let buffer;
         let ext = ".jpg";
@@ -26,7 +27,7 @@ export async function uploadImage(req, res) {
           if (!response.ok) throw new Error("No se pudo descargar la imagen");
           buffer = await response.arrayBuffer();
           ext = path.extname(foto).split("?")[0] || ".jpg";
-        } 
+        }
         // Asumimos que es Base64
         else {
           // Si viene con prefijo data URI, lo quitamos
@@ -36,14 +37,19 @@ export async function uploadImage(req, res) {
 
         filename = `${uuidv4()}${ext}`;
         const savePath = path.join(__dirname, "../public/uploads/", filename);
-        
-        fs.writeFileSync(savePath, Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer));
-        
+
+        fs.writeFileSync(
+          savePath,
+          Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer),
+        );
+
         // Simulamos el objeto file para mantener consistencia
         file = { filename };
       } catch (err) {
         console.error("Error procesando imagen del bot:", err);
-        return res.status(400).json({ error: "Error al procesar la imagen (URL o Base64 inválido)" });
+        return res.status(400).json({
+          error: "Error al procesar la imagen (URL o Base64 inválido)",
+        });
       }
     }
 
@@ -63,7 +69,7 @@ export async function uploadImage(req, res) {
 
     const [result] = await pool.execute(
       "INSERT INTO images (uid, nombre, telefono, url, texto, timestamp) VALUES (?, ?, ?, ?, ?, ?)",
-      [uid, nombre, telefono || "", url, texto || "", timestamp]
+      [uid, nombre, telefono || "", url, texto || "", timestamp],
     );
 
     const imageData = {
@@ -111,7 +117,7 @@ export async function getAllImages(req, res) {
 export async function getImageCount(req, res) {
   try {
     const [rows] = await pool.execute(
-      "SELECT COUNT(*) as count FROM images WHERE estado = 1"
+      "SELECT COUNT(*) as count FROM images WHERE estado = 1",
     );
 
     res.json({
@@ -135,7 +141,7 @@ export async function updateImageStatus(req, res) {
 
     const [result] = await pool.execute(
       "UPDATE images SET estado = ? WHERE uid = ?",
-      [estado, uid]
+      [estado, uid],
     );
 
     if (result.affectedRows === 0) {
@@ -144,7 +150,7 @@ export async function updateImageStatus(req, res) {
 
     // Get updated list of active images to broadcast
     const [activeImages] = await pool.execute(
-      "SELECT uid, nombre, url, texto, timestamp FROM images WHERE estado = 1 ORDER BY timestamp ASC"
+      "SELECT uid, nombre, url, texto, timestamp FROM images WHERE estado = 1 ORDER BY timestamp ASC",
     );
 
     broadcastMessage("UPDATE_IMAGES", activeImages);
