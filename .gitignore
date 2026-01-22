@@ -36,3 +36,4 @@ next-env.d.ts
 
 # carpetas
 bot/auth_info
+backend/public/*
