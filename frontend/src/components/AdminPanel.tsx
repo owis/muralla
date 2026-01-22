@@ -16,6 +16,11 @@ interface AdminPanelProps {
 export default function AdminPanel({ apiUrl }: AdminPanelProps) {
   const [images, setImages] = useState<Image[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sortBy, setSortBy] = useState<
+    "date_desc" | "date_asc" | "sender_asc" | "sender_desc"
+  >("date_desc");
+  const [showOnlyVisible, setShowOnlyVisible] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const fetchImages = async () => {
     try {
@@ -83,11 +88,100 @@ export default function AdminPanel({ apiUrl }: AdminPanelProps) {
   if (loading)
     return <div className="text-white text-center p-10">Cargando...</div>;
 
+  const filteredImages = images
+    .filter((img) => {
+      // Filtro por visibilidad
+      if (showOnlyVisible && img.estado !== 1) return false;
+
+      // Filtro por buscador
+      const searchLower = searchTerm.toLowerCase();
+      return (
+        img.nombre.toLowerCase().includes(searchLower) ||
+        (img.texto && img.texto.toLowerCase().includes(searchLower)) ||
+        img.uid.toLowerCase().includes(searchLower)
+      );
+    })
+    .sort((a, b) => {
+      // Ordenamiento
+      switch (sortBy) {
+        case "date_asc":
+          return (
+            new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+          );
+        case "date_desc":
+          return (
+            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+          );
+        case "sender_asc":
+          return a.nombre.localeCompare(b.nombre);
+        case "sender_desc":
+          return b.nombre.localeCompare(a.nombre);
+        default:
+          return 0;
+      }
+    });
+
   return (
     <div className="container mx-auto p-4 overflow-y-auto h-screen">
-      <h1 className="text-3xl font-bold text-white mb-6">Administración de Imágenes</h1>
+      <h1 className="text-3xl font-bold text-white mb-6">
+        Administración de Imágenes
+      </h1>
+
+      {/* Filtros y Controles */}
+      <div className="bg-gray-800 p-4 rounded-lg mb-6 text-white space-y-4 md:space-y-0 md:flex md:items-center md:justify-between gap-4">
+        {/* Buscador */}
+        <div className="flex-1">
+          <input
+            type="text"
+            placeholder="Buscar por nombre, texto o ID..."
+            className="w-full px-4 py-2 rounded bg-gray-700 text-white border border-gray-600 focus:outline-none focus:border-blue-500"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        {/* Ordenar por */}
+        <div className="flex items-center space-x-2">
+          <label className="text-sm text-gray-300 whitespace-nowrap">
+            Ordenar por:
+          </label>
+          <select
+            className="px-4 py-2 rounded bg-gray-700 text-white border border-gray-600 focus:outline-none focus:border-blue-500"
+            value={sortBy}
+            onChange={(e) =>
+              setSortBy(
+                e.target.value as
+                  | "date_desc"
+                  | "date_asc"
+                  | "sender_asc"
+                  | "sender_desc",
+              )
+            }
+          >
+            <option value="date_desc">Fecha (Más reciente)</option>
+            <option value="date_asc">Fecha (Más antigua)</option>
+            <option value="sender_asc">Remitente (A-Z)</option>
+            <option value="sender_desc">Remitente (Z-A)</option>
+          </select>
+        </div>
+
+        {/* Checkbox Solo Visibles */}
+        <div className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            id="showVisible"
+            className="w-5 h-5 rounded bg-gray-700 border-gray-600 text-blue-500 focus:ring-blue-500"
+            checked={showOnlyVisible}
+            onChange={(e) => setShowOnlyVisible(e.target.checked)}
+          />
+          <label htmlFor="showVisible" className="cursor-pointer select-none">
+            Ver solo visibles
+          </label>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-20">
-        {images.map((image) => (
+        {filteredImages.map((image) => (
           <div
             key={image.uid}
             className={`bg-white rounded-lg overflow-hidden shadow-lg transition-opacity ${
