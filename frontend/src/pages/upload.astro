@@ -1,16 +1,20 @@
 ---
 import Layout from "../layouts/Layout.astro";
 
-const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:3001";
+const API_URL = import.meta.env.PUBLIC_API_URL;
 ---
 
-<Layout title="Subir Imagen">
-  <div class="min-h-screen bg-gradient-to-br from-dark via-slate-900 to-dark flex items-center justify-center p-4">
+<Layout title={`Subir Imagen - ${API_URL}`}>
+  <div
+    class="min-h-screen bg-gradient-to-br from-dark via-slate-900 to-dark flex items-center justify-center p-4"
+  >
     <div class="w-full max-w-md">
       <div class="glass rounded-3xl p-8 shadow-2xl">
         <!-- Header -->
         <div class="text-center mb-8">
-          <div class="w-16 h-16 bg-primary/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <div
+            class="w-16 h-16 bg-primary/20 rounded-2xl flex items-center justify-center mx-auto mb-4"
+          >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               class="h-8 w-8 text-primary"
@@ -26,15 +30,22 @@ const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:3001";
               ></path>
             </svg>
           </div>
-          <h1 class="text-2xl font-bold text-white mb-2">Comparte tu momento</h1>
-          <p class="text-white/60 text-sm">Sube una imagen para mostrarla en la pantalla</p>
+          <h1 class="text-2xl font-bold text-white mb-2">
+            Comparte tu momento
+          </h1>
+          <p class="text-white/60 text-sm">
+            Sube una imagen para mostrarla en la pantalla
+          </p>
         </div>
 
         <!-- Form -->
         <form id="upload-form" class="space-y-5" enctype="multipart/form-data">
           <!-- Name -->
           <div>
-            <label for="nombre" class="block text-sm font-medium text-white/80 mb-2">
+            <label
+              for="nombre"
+              class="block text-sm font-medium text-white/80 mb-2"
+            >
               Tu nombre *
             </label>
             <input
@@ -49,7 +60,10 @@ const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:3001";
 
           <!-- Phone -->
           <div>
-            <label for="telefono" class="block text-sm font-medium text-white/80 mb-2">
+            <label
+              for="telefono"
+              class="block text-sm font-medium text-white/80 mb-2"
+            >
               Teléfono (opcional)
             </label>
             <input
@@ -63,7 +77,10 @@ const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:3001";
 
           <!-- Text -->
           <div>
-            <label for="texto" class="block text-sm font-medium text-white/80 mb-2">
+            <label
+              for="texto"
+              class="block text-sm font-medium text-white/80 mb-2"
+            >
               Mensaje o descripción
             </label>
             <textarea
@@ -71,8 +88,7 @@ const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:3001";
               name="texto"
               rows="3"
               class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent transition-all resize-none"
-              placeholder="Escribe un mensaje para mostrar..."
-            ></textarea>
+              placeholder="Escribe un mensaje para mostrar..."></textarea>
           </div>
 
           <!-- Image Upload -->
@@ -108,9 +124,13 @@ const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:3001";
                   ></path>
                 </svg>
                 <p class="text-white/60 text-sm">
-                  Arrastra una imagen o <span class="text-primary">selecciona</span>
+                  Arrastra una imagen o <span class="text-primary"
+                    >selecciona</span
+                  >
                 </p>
-                <p class="text-white/40 text-xs mt-1">PNG, JPG, GIF hasta 10MB</p>
+                <p class="text-white/40 text-xs mt-1">
+                  PNG, JPG, GIF hasta 10MB
+                </p>
               </div>
               <div id="preview-container" class="hidden">
                 <img id="image-preview" class="max-h-40 mx-auto rounded-lg" />
@@ -135,8 +155,7 @@ const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:3001";
                   r="10"
                   stroke="currentColor"
                   stroke-width="4"
-                  fill="none"
-                ></circle>
+                  fill="none"></circle>
                 <path
                   class="opacity-75"
                   fill="currentColor"
@@ -148,11 +167,10 @@ const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:3001";
         </form>
 
         <!-- Success Message -->
-        <div
-          id="success-message"
-          class="hidden text-center py-8"
-        >
-          <div class="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+        <div id="success-message" class="hidden text-center py-8">
+          <div
+            class="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4"
+          >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               class="h-8 w-8 text-green-400"
@@ -164,12 +182,13 @@ const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:3001";
                 stroke-linecap="round"
                 stroke-linejoin="round"
                 stroke-width="2"
-                d="M5 13l4 4L19 7"
-              ></path>
+                d="M5 13l4 4L19 7"></path>
             </svg>
           </div>
           <h3 class="text-xl font-bold text-white mb-2">¡Imagen enviada!</h3>
-          <p class="text-white/60 text-sm mb-4">Tu imagen aparecerá en pantalla pronto</p>
+          <p class="text-white/60 text-sm mb-4">
+            Tu imagen aparecerá en pantalla pronto
+          </p>
           <button
             id="upload-another"
             class="text-primary hover:underline text-sm font-medium"
@@ -182,95 +201,95 @@ const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:3001";
   </div>
 
   <script define:vars={{ API_URL }}>
-    const form = document.getElementById("upload-form")
-    const submitBtn = document.getElementById("submit-btn")
-    const btnText = document.getElementById("btn-text")
-    const btnLoading = document.getElementById("btn-loading")
-    const successMessage = document.getElementById("success-message")
-    const uploadAnother = document.getElementById("upload-another")
-    const imageInput = document.getElementById("imagen")
-    const uploadPlaceholder = document.getElementById("upload-placeholder")
-    const previewContainer = document.getElementById("preview-container")
-    const imagePreview = document.getElementById("image-preview")
-    const fileName = document.getElementById("file-name")
-    const dropZone = document.getElementById("drop-zone")
+    const form = document.getElementById("upload-form");
+    const submitBtn = document.getElementById("submit-btn");
+    const btnText = document.getElementById("btn-text");
+    const btnLoading = document.getElementById("btn-loading");
+    const successMessage = document.getElementById("success-message");
+    const uploadAnother = document.getElementById("upload-another");
+    const imageInput = document.getElementById("imagen");
+    const uploadPlaceholder = document.getElementById("upload-placeholder");
+    const previewContainer = document.getElementById("preview-container");
+    const imagePreview = document.getElementById("image-preview");
+    const fileName = document.getElementById("file-name");
+    const dropZone = document.getElementById("drop-zone");
 
     // Image preview
     imageInput.addEventListener("change", (e) => {
-      const file = e.target.files[0]
+      const file = e.target.files[0];
       if (file) {
-        const reader = new FileReader()
+        const reader = new FileReader();
         reader.onload = (e) => {
-          imagePreview.src = e.target.result
-          fileName.textContent = file.name
-          uploadPlaceholder.classList.add("hidden")
-          previewContainer.classList.remove("hidden")
-        }
-        reader.readAsDataURL(file)
+          imagePreview.src = e.target.result;
+          fileName.textContent = file.name;
+          uploadPlaceholder.classList.add("hidden");
+          previewContainer.classList.remove("hidden");
+        };
+        reader.readAsDataURL(file);
       }
-    })
+    });
 
     // Drag and drop
     dropZone.addEventListener("dragover", (e) => {
-      e.preventDefault()
-      dropZone.classList.add("border-primary", "bg-white/5")
-    })
+      e.preventDefault();
+      dropZone.classList.add("border-primary", "bg-white/5");
+    });
 
     dropZone.addEventListener("dragleave", () => {
-      dropZone.classList.remove("border-primary", "bg-white/5")
-    })
+      dropZone.classList.remove("border-primary", "bg-white/5");
+    });
 
     dropZone.addEventListener("drop", (e) => {
-      e.preventDefault()
-      dropZone.classList.remove("border-primary", "bg-white/5")
-      const file = e.dataTransfer.files[0]
+      e.preventDefault();
+      dropZone.classList.remove("border-primary", "bg-white/5");
+      const file = e.dataTransfer.files[0];
       if (file && file.type.startsWith("image/")) {
-        imageInput.files = e.dataTransfer.files
-        imageInput.dispatchEvent(new Event("change"))
+        imageInput.files = e.dataTransfer.files;
+        imageInput.dispatchEvent(new Event("change"));
       }
-    })
+    });
 
     // Form submission
     form.addEventListener("submit", async (e) => {
-      e.preventDefault()
+      e.preventDefault();
 
-      submitBtn.disabled = true
-      btnText.classList.add("hidden")
-      btnLoading.classList.remove("hidden")
+      submitBtn.disabled = true;
+      btnText.classList.add("hidden");
+      btnLoading.classList.remove("hidden");
 
-      const formData = new FormData(form)
+      const formData = new FormData(form);
 
       try {
         const response = await fetch(`${API_URL}/api/upload`, {
           method: "POST",
           body: formData,
-        })
+        });
 
-        const data = await response.json()
+        const data = await response.json();
 
         if (data.success) {
-          form.classList.add("hidden")
-          successMessage.classList.remove("hidden")
+          form.classList.add("hidden");
+          successMessage.classList.remove("hidden");
         } else {
-          alert(data.error || "Error al subir la imagen")
+          alert(data.error || "Error al subir la imagen");
         }
       } catch (error) {
-        console.error("Error:", error)
-        alert("Error de conexión. Intenta de nuevo.")
+        console.error("Error:", error);
+        alert("Error de conexión. Intenta de nuevo.");
       } finally {
-        submitBtn.disabled = false
-        btnText.classList.remove("hidden")
-        btnLoading.classList.add("hidden")
+        submitBtn.disabled = false;
+        btnText.classList.remove("hidden");
+        btnLoading.classList.add("hidden");
       }
-    })
+    });
 
     // Upload another
     uploadAnother.addEventListener("click", () => {
-      form.reset()
-      uploadPlaceholder.classList.remove("hidden")
-      previewContainer.classList.add("hidden")
-      form.classList.remove("hidden")
-      successMessage.classList.add("hidden")
-    })
+      form.reset();
+      uploadPlaceholder.classList.remove("hidden");
+      previewContainer.classList.add("hidden");
+      form.classList.remove("hidden");
+      successMessage.classList.add("hidden");
+    });
   </script>
 </Layout>
