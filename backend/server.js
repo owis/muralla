@@ -7,6 +7,7 @@ import { dirname, join } from "path";
 import fs from "fs";
 
 import { testConnection } from "./config/database.js";
+import pool from "./config/database.js";
 import { initWebSocket } from "./config/websocket.js";
 import imageRoutes from "./routes/imageRoutes.js";
 
@@ -18,6 +19,31 @@ const __dirname = dirname(__filename);
 const app = express();
 const server = createServer(app);
 const PORT = process.env.PORT || 3001;
+
+// Database Initialization
+async function initDatabase() {
+  try {
+    const createTableQuery = `
+      CREATE TABLE IF NOT EXISTS images (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        uid VARCHAR(36) NOT NULL UNIQUE,
+        nombre VARCHAR(255) NOT NULL,
+        telefono VARCHAR(20),
+        url VARCHAR(500) NOT NULL,
+        texto TEXT,
+        estado TINYINT DEFAULT 1,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_uid (uid),
+        INDEX idx_timestamp (timestamp)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `;
+    await pool.execute(createTableQuery);
+    console.log("Database initialized: 'images' table verified.");
+  } catch (error) {
+    console.error("Database initialization failed:", error);
+  }
+}
 
 // Create uploads directory if it doesn't exist
 const uploadsDir = join(__dirname, "public/uploads");
@@ -88,6 +114,7 @@ initWebSocket(server);
 // Start server
 async function startServer() {
   await testConnection();
+  await initDatabase();
 
   server.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
