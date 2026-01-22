@@ -1,11 +1,39 @@
 import { v4 as uuidv4 } from "uuid";
 import pool from "../config/database.js";
 import { broadcastNewImage, broadcastMessage } from "../config/websocket.js";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export async function uploadImage(req, res) {
   try {
-    const { nombre, telefono, texto } = req.body;
-    const file = req.file;
+    const { nombre, telefono, texto, foto } = req.body;
+    let file = req.file;
+    let filename;
+
+    // Caso 1: Subida vía Bot (JSON con URL de foto)
+    if (!file && foto) {
+      try {
+        const response = await fetch(foto);
+        if (!response.ok) throw new Error("No se pudo descargar la imagen");
+        
+        const buffer = await response.arrayBuffer();
+        const ext = path.extname(foto).split("?")[0] || ".jpg"; // Intenta adivinar extensión o default .jpg
+        filename = `${uuidv4()}${ext}`;
+        const savePath = path.join(__dirname, "../public/uploads/", filename);
+        
+        fs.writeFileSync(savePath, Buffer.from(buffer));
+        
+        // Simulamos el objeto file para mantener consistencia
+        file = { filename };
+      } catch (err) {
+        console.error("Error descargando imagen del bot:", err);
+        return res.status(400).json({ error: "Error al procesar la URL de la imagen" });
+      }
+    }
 
     if (!file) {
       return res
@@ -18,7 +46,7 @@ export async function uploadImage(req, res) {
     }
 
     const uid = uuidv4();
-    const url = `/uploads/${file.filename}`;
+    const url = `/uploads/${file.filename || filename}`;
     const timestamp = new Date().toISOString().slice(0, 19).replace("T", " ");
 
     const [result] = await pool.execute(
