@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import ToastNotification from "./ToastNotification";
 
 const ENABLE_CONFETTI = true;
 const DROP_INTERVAL = 6000;
@@ -34,6 +35,7 @@ export default function Slideshow({ apiUrl, wsUrl }: SlideshowProps) {
   );
   const [activeImageIndex, setActiveImageIndex] = useState<number | null>(null);
   const [isTextVisible, setIsTextVisible] = useState(false);
+  const [notification, setNotification] = useState<string | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -137,6 +139,11 @@ export default function Slideshow({ apiUrl, wsUrl }: SlideshowProps) {
               ...prev,
               processImage(message.data, prev.length),
             ]);
+
+            // Mostrar notificación
+            const senderName = message.data.nombre || "Alguien";
+            setNotification(`${senderName} se ha unido a la fiesta!`);
+
             // For new real-time images, we might want to add them immediately to displayed?
             // The effect above will handle it naturally as allImages grows.
           } else if (
@@ -190,6 +197,10 @@ export default function Slideshow({ apiUrl, wsUrl }: SlideshowProps) {
   if (allImages.length === 0) {
     return (
       <div className="absolute inset-0 flex items-center justify-center">
+        <ToastNotification
+          message={notification}
+          onClose={() => setNotification(null)}
+        />
         <div className="glass rounded-2xl p-8 text-center">
           <div className="animate-pulse">
             <svg
@@ -270,6 +281,10 @@ export default function Slideshow({ apiUrl, wsUrl }: SlideshowProps) {
       ref={containerRef}
       className="absolute inset-0 flex items-center justify-center overflow-hidden bg-transparent"
     >
+      <ToastNotification
+        message={notification}
+        onClose={() => setNotification(null)}
+      />
       {displayedImages.map((img) => (
         <div
           key={img.instanceId}
@@ -307,7 +322,7 @@ export default function Slideshow({ apiUrl, wsUrl }: SlideshowProps) {
                           '"Bilbo", "Chalkboard SE", "Marker Felt", sans-serif',
                       }}
                     >
-                      "{img.texto}"
+                      {img.texto ? `"${img.texto}"` : ""}
                     </p>
 
                     <p className="text-md font-bold leading-tight text-gray-500">
