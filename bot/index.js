@@ -257,7 +257,7 @@ const startBot = async () => {
           });
 
           await sock.sendMessage(remoteJid, {
-            text: "📸 Imagen recibida. ¿Deseas asignarle un nombre? (Responde 'Si' o 'No')",
+            text: "📸 Imagen recibida!\n\n ¿Quieres agregarle una pequeña dedicatoria? \n(Responde '*Si*' o '*No*')",
           });
         } catch (err) {
           console.error("Error descargando imagen:", err);
