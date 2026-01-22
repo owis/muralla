@@ -28,7 +28,12 @@ if (!fs.existsSync(uploadsDir)) {
 // Middleware
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "https://muralla.creceideas.cl",
+    origin: [
+      process.env.FRONTEND_URL || "https://muralla.creceideas.cl",
+      "http://localhost:4321",
+      "http://localhost:3000",
+      "http://muralla.creceideas.cl",
+    ],
     credentials: true,
   }),
 );
