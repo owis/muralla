@@ -6,13 +6,13 @@ const { current = 0, total = 0 } = Astro.props;
   <div class="flex items-center gap-3">
     <span
       id="current-count"
-      class="text-8xl font-bold text-amber-400 font-mouse text-shadow"
+      class="text-5xl md:text-8xl font-bold text-amber-400 font-mouse text-shadow"
       >{current}</span
     >
-    <span class="text-white/40 text-6xl">/</span>
+    <span class="text-white/40 text-3xl md:text-6xl">/</span>
     <span
       id="total-count"
-      class="text-6xl font-mouse font-semibold text-fuchsia-400/80"
+      class="text-3xl md:text-6xl font-mouse font-semibold text-fuchsia-400/80"
       >{total}</span
     >
   </div>

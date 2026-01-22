@@ -6,13 +6,12 @@ import VideoBackground from "../components/VideoBackground.astro";
 import QRCode from "../components/QRCode.astro";
 import Slideshow from "../components/Slideshow";
 
-const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:3001";
-const WS_URL = import.meta.env.PUBLIC_WS_URL || "ws://localhost:3001";
-const UPLOAD_URL =
-  import.meta.env.PUBLIC_UPLOAD_URL || "http://localhost:4321/upload";
+const API_URL = import.meta.env.PUBLIC_API_URL;
+const WS_URL = import.meta.env.PUBLIC_WS_URL;
+const UPLOAD_URL = import.meta.env.PUBLIC_UPLOAD_URL;
 ---
 
-<Layout title="3D Slideshow Interactivo">
+<Layout title="MURALLA">
   <!-- Video/Animated Background -->
   <VideoBackground />
 
