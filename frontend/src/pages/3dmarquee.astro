@@ -1,12 +1,14 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import Marquee3D from "../components/Marquee3D";
+import Logo from "../components/Logo.astro";
 
 const API_URL = import.meta.env.PUBLIC_API_URL;
 const WS_URL = import.meta.env.PUBLIC_WS_URL;
 ---
 
 <Layout title="3D Marquee - Muralla">
+  <Logo />
   <main class="w-full h-screen bg-slate-950 overflow-hidden">
     <Marquee3D
       client:only="react"

@@ -118,7 +118,7 @@ export default function Marquee3D({
         onClose={() => setNotification(null)}
       />
 
-      <div className="flex h-full w-full flex-col justify-center gap-10 [perspective:1000px] py-10">
+      <div className="flex h-full w-full flex-col justify-center gap-12 [perspective:1000px] py-10">
         {/* Fila 1 */}
         <MarqueeRow
           images={displayImages}
