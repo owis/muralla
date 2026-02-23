@@ -38,6 +38,9 @@ export default function Slideshow({ apiUrl, wsUrl }: SlideshowProps) {
   const [notification, setNotification] = useState<string | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const imageCacheRef = useRef<Map<string, string>>(new Map());
+  const cycleCountRef = useRef<number>(0);
 
   // Helper to add visual properties to an image
   const processImage = (img: ImageData, index: number): ImageWithVisuals => {
@@ -58,6 +61,19 @@ export default function Slideshow({ apiUrl, wsUrl }: SlideshowProps) {
     };
   };
 
+  // Preload image into cache
+  const preloadImage = (url: string): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        imageCacheRef.current.set(url, url);
+        resolve();
+      };
+      img.onerror = reject;
+      img.src = url;
+    });
+  };
+
   // Fetch initial images
   useEffect(() => {
     async function fetchImages() {
@@ -70,6 +86,12 @@ export default function Slideshow({ apiUrl, wsUrl }: SlideshowProps) {
             processImage(img, i)
           );
           setAllImages(processedImages);
+          
+          // Preload all images into cache
+          processedImages.forEach((img: ImageWithVisuals) => {
+            preloadImage(`${apiUrl}${img.url}`);
+          });
+          
           if (processedImages.length > 0) {
             setDisplayedImages([processedImages[0]]);
           }
@@ -85,30 +107,40 @@ export default function Slideshow({ apiUrl, wsUrl }: SlideshowProps) {
   useEffect(() => {
     if (allImages.length === 0) return;
 
-    const timeout = setTimeout(() => {
+    const interval = setInterval(() => {
+      const totalImages = allImages.length;
+      
+      // Usar el contador de ciclos para determinar qué imagen mostrar
+      const nextIndex = cycleCountRef.current % totalImages;
+      const baseImage = allImages[nextIndex];
+      
+      // Crear nueva imagen visual
+      const visual = processImage(baseImage, cycleCountRef.current);
+      
       setDisplayedImages((prev) => {
-        if (allImages.length === 0) return prev;
-        // Avanzar circularmente por las imágenes disponibles
-        const nextIndex = prev.length % allImages.length;
-        const baseImage = allImages[nextIndex];
-        const visual = processImage(baseImage, prev.length);
-        
+        // Agregar la nueva imagen siempre
         const newPile = [...prev, visual];
-        // Mantener solo las últimas 5 imágenes para evitar problemas de memoria y superposición excesiva
+        
+        // Mantener solo las últimas 5 imágenes
         if (newPile.length > 5) {
-          return newPile.slice(newPile.length - 5);
+          return newPile.slice(-5);
         }
         return newPile;
       });
+      
+      // Incrementar el contador para la siguiente imagen
+      cycleCountRef.current = (cycleCountRef.current + 1) % totalImages;
     }, DROP_INTERVAL);
 
-    return () => clearTimeout(timeout);
-  }, [displayedImages.length, allImages.length]);
+    return () => clearInterval(interval);
+  }, [allImages.length]);
 
   // Control del texto grande y timing de visibilidad
   useEffect(() => {
     if (displayedImages.length === 0) return;
 
+    // Usar la última imagen visual como referencia
+    const latestVisual = displayedImages[displayedImages.length - 1];
     const index = displayedImages.length - 1;
     setActiveImageIndex(index);
     setIsTextVisible(true);
@@ -120,21 +152,37 @@ export default function Slideshow({ apiUrl, wsUrl }: SlideshowProps) {
     return () => {
       clearTimeout(hideTimeout);
     };
-  }, [displayedImages.length]);
+  }, [displayedImages, cycleCountRef.current]);
 
   // WebSocket connection
   useEffect(() => {
+    let isConnected = false;
+    let reconnectAttempts = 0;
+    const maxReconnectAttempts = 10;
+
     function connectWebSocket() {
+      // Prevent multiple simultaneous connections
+      if (wsRef.current?.readyState === WebSocket.OPEN || wsRef.current?.readyState === WebSocket.CONNECTING) {
+        return;
+      }
+
       wsRef.current = new WebSocket(wsUrl);
 
       wsRef.current.onopen = () => {
         console.log("WebSocket connected");
+        isConnected = true;
+        reconnectAttempts = 0;
       };
 
       wsRef.current.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data);
           if (message.type === "NEW_IMAGE" && message.data) {
+            const imageUrl = `${apiUrl}${message.data.url}`;
+            
+            // Preload new image into cache
+            preloadImage(imageUrl);
+
             setAllImages((prev) => [
               ...prev,
               processImage(message.data, prev.length),
@@ -154,30 +202,62 @@ export default function Slideshow({ apiUrl, wsUrl }: SlideshowProps) {
               processImage(img, i)
             );
             setAllImages(newImages);
+            
+            // Preload all updated images
+            newImages.forEach((img: ImageWithVisuals) => {
+              preloadImage(`${apiUrl}${img.url}`);
+            });
           }
         } catch (error) {
           console.error("Error parsing WebSocket message:", error);
         }
       };
 
-      wsRef.current.onclose = () => {
-        console.log("WebSocket disconnected, reconnecting...");
-        setTimeout(connectWebSocket, 3000);
+      wsRef.current.onclose = (event) => {
+        console.log("WebSocket disconnected", event.code, event.reason);
+        isConnected = false;
+        
+        // Clean up current connection
+        if (wsRef.current) {
+          wsRef.current.onopen = null;
+          wsRef.current.onmessage = null;
+          wsRef.current.onclose = null;
+          wsRef.current.onerror = null;
+          wsRef.current = null;
+        }
+
+        // Attempt to reconnect with exponential backoff
+        if (reconnectAttempts < maxReconnectAttempts) {
+          const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+          console.log(`Reconnecting in ${delay}ms (attempt ${reconnectAttempts + 1}/${maxReconnectAttempts})`);
+          
+          reconnectTimeoutRef.current = setTimeout(() => {
+            reconnectAttempts++;
+            connectWebSocket();
+          }, delay);
+        } else {
+          console.error("Max reconnection attempts reached");
+        }
       };
 
       wsRef.current.onerror = (error) => {
         console.error("WebSocket error:", error);
+        // Let onclose handle reconnection
       };
     }
 
     connectWebSocket();
 
     return () => {
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
       if (wsRef.current) {
-        wsRef.current.close();
+        wsRef.current.close(1000, "Component unmounting");
+        wsRef.current = null;
       }
     };
-  }, [wsUrl]);
+  }, [wsUrl, apiUrl]);
 
   // Actualizar contador (current / total) en el DOM, reiniciando al llegar al final
   useEffect(() => {
