@@ -262,15 +262,24 @@ export default function Slideshow({ apiUrl, wsUrl }: SlideshowProps) {
 
   // Actualizar contador (current / total) en el DOM, reiniciando al llegar al final
   useEffect(() => {
-    const currentEl = document.getElementById("current-count");
-    const totalEl = document.getElementById("total-count");
+    const updateCounter = () => {
+      const currentEl = document.getElementById("current-count");
+      const totalEl = document.getElementById("total-count");
 
-    const total = allImages.length;
-    const current = total > 0 ? (cycleCountRef.current % total) + 1 : 0;
+      const total = allImages.length;
+      const current = total > 0 ? (cycleCountRef.current % total) + 1 : 0;
 
-    if (currentEl) currentEl.textContent = String(current);
-    if (totalEl) totalEl.textContent = String(total);
-  }, [cycleCountRef.current, allImages.length]);
+      if (currentEl) currentEl.textContent = String(current);
+      if (totalEl) totalEl.textContent = String(total);
+    };
+
+    // Actualizar inmediatamente
+    updateCounter();
+
+    // Actualizar cada vez que cambia displayedImages (que es cuando cambia la imagen)
+    const interval = setInterval(updateCounter, 500);
+    return () => clearInterval(interval);
+  }, [displayedImages, allImages.length]);
 
   if (allImages.length === 0) {
     return (
