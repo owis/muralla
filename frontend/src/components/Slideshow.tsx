@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import ToastNotification from "./ToastNotification";
 
-const ENABLE_CONFETTI = true;
 const DROP_INTERVAL = 6000;
 const TEXT_HIDE_OFFSET = 2000;
 
@@ -31,7 +30,7 @@ interface SlideshowProps {
 export default function Slideshow({ apiUrl, wsUrl }: SlideshowProps) {
   const [allImages, setAllImages] = useState<ImageWithVisuals[]>([]);
   const [displayedImages, setDisplayedImages] = useState<ImageWithVisuals[]>(
-    []
+    [],
   );
   const [activeImageIndex, setActiveImageIndex] = useState<number | null>(null);
   const [isTextVisible, setIsTextVisible] = useState(false);
@@ -74,28 +73,52 @@ export default function Slideshow({ apiUrl, wsUrl }: SlideshowProps) {
     });
   };
 
-  // Fetch initial images
+  // Fetch initial images with LocalStorage Cache
   useEffect(() => {
     async function fetchImages() {
+      // 1. Try to load from LocalStorage first for instant render
+      const cachedData = localStorage.getItem("slideshow_images");
+      if (cachedData) {
+        try {
+          const parsedData = JSON.parse(cachedData);
+          if (Array.isArray(parsedData)) {
+            const processedImages = parsedData.map(
+              (img: ImageData, i: number) => processImage(img, i),
+            );
+            setAllImages(processedImages);
+            if (processedImages.length > 0) {
+              setDisplayedImages([processedImages[0]]);
+            }
+          }
+        } catch (e) {
+          console.error("Error loading cached images:", e);
+        }
+      }
+
+      // 2. Fetch fresh data from API
       try {
         const response = await fetch(`${apiUrl}/api/images`);
         const data = await response.json();
         if (data.success && data.data) {
+          // Update LocalStorage
+          localStorage.setItem("slideshow_images", JSON.stringify(data.data));
+
           // Process all existing images
           const processedImages = data.data.map((img: ImageData, i: number) =>
-            processImage(img, i)
+            processImage(img, i),
           );
           setAllImages(processedImages);
-          
+
           // Reset cycle counter when loading images
           cycleCountRef.current = 0;
-          
+
           // Preload all images into cache
           processedImages.forEach((img: ImageWithVisuals) => {
             preloadImage(`${apiUrl}${img.url}`);
           });
-          
-          if (processedImages.length > 0) {
+
+          // Only update displayed if it was empty (to avoid flicker if cache loaded)
+          if (processedImages.length > 0 && displayedImages.length === 0) {
             setDisplayedImages([processedImages[0]]);
           }
         }
@@ -112,18 +135,18 @@ export default function Slideshow({ apiUrl, wsUrl }: SlideshowProps) {
 
     const interval = setInterval(() => {
       const totalImages = allImages.length;
-      
+
       // Usar el contador de ciclos para determinar qué imagen mostrar
       const nextIndex = cycleCountRef.current % totalImages;
       const baseImage = allImages[nextIndex];
-      
+
       // Crear nueva imagen visual con zIndex más alto
       const visual = processImage(baseImage, cycleCountRef.current);
-      
+
       setDisplayedImages((prev) => {
         // Agregar la nueva imagen siempre con zIndex más alto
         const newPile = [...prev, { ...visual, zIndex: prev.length }];
-        
+
         // Mantener solo las últimas 5 imágenes, con zIndex de 0 a 4
         if (newPile.length > 5) {
           return newPile.slice(-5).map((img, idx) => ({ ...img, zIndex: idx }));
@@ -131,13 +154,15 @@ export default function Slideshow({ apiUrl, wsUrl }: SlideshowProps) {
         // Recalcular zIndex para que el más nuevo tenga el mayor
         return newPile.map((img, idx) => ({ ...img, zIndex: idx }));
       });
-      
+
       // Incrementar el contador para la siguiente imagen
       cycleCountRef.current = (cycleCountRef.current + 1) % totalImages;
     }, DROP_INTERVAL);
 
     return () => clearInterval(interval);
-  }, [allImages.length]);
+  }, [allImages.length]); // Dependencia clave: si cambia allImages (nueva foto), el efecto se reinicia si fuera necesario, pero aquí solo necesitamos el length actualizado dentro del intervalo? No, el closure captura allImages.
+  // Pero como allImages cambia con setAllImages, el efecto se re-ejecuta, reiniciando el intervalo.
+  // Esto está bien, pero cycleCountRef persiste.
 
   // Control del texto grande y timing de visibilidad
   useEffect(() => {
@@ -149,9 +174,12 @@ export default function Slideshow({ apiUrl, wsUrl }: SlideshowProps) {
     setActiveImageIndex(index);
     setIsTextVisible(true);
 
-    const hideTimeout = setTimeout(() => {
-      setIsTextVisible(false);
-    }, Math.max(0, DROP_INTERVAL - TEXT_HIDE_OFFSET));
+    const hideTimeout = setTimeout(
+      () => {
+        setIsTextVisible(false);
+      },
+      Math.max(0, DROP_INTERVAL - TEXT_HIDE_OFFSET),
+    );
 
     return () => {
       clearTimeout(hideTimeout);
@@ -166,7 +194,10 @@ export default function Slideshow({ apiUrl, wsUrl }: SlideshowProps) {
 
     function connectWebSocket() {
       // Prevent multiple simultaneous connections
-      if (wsRef.current?.readyState === WebSocket.OPEN || wsRef.current?.readyState === WebSocket.CONNECTING) {
+      if (
+        wsRef.current?.readyState === WebSocket.OPEN ||
+        wsRef.current?.readyState === WebSocket.CONNECTING
+      ) {
         return;
       }
 
@@ -183,33 +214,47 @@ export default function Slideshow({ apiUrl, wsUrl }: SlideshowProps) {
           const message = JSON.parse(event.data);
           if (message.type === "NEW_IMAGE" && message.data) {
             const imageUrl = `${apiUrl}${message.data.url}`;
-            
+
             // Preload new image into cache
             preloadImage(imageUrl);
 
-            setAllImages((prev) => [
-              ...prev,
-              processImage(message.data, prev.length),
-            ]);
+            // Update state: Add to END of array
+            setAllImages((prev) => {
+              const newImg = processImage(message.data, prev.length);
+              const updated = [...prev, newImg];
+              // Update LocalStorage
+              const rawData = updated.map((u) => ({
+                uid: u.uid,
+                nombre: u.nombre,
+                url: u.url,
+                texto: u.texto,
+                timestamp: u.timestamp,
+              }));
+              localStorage.setItem("slideshow_images", JSON.stringify(rawData));
+              return updated;
+            });
 
-            // Reset cycle counter when new image is added
-            cycleCountRef.current = 0;
+            // Don't reset cycle counter - let it continue normally
+            // The new image will be shown when the cycle reaches the end
 
             // Mostrar notificación
             const senderName = message.data.nombre || "Alguien";
             setNotification(`${senderName} se ha unido a la fiesta!`);
-
-            // For new real-time images, we might want to add them immediately to displayed?
-            // The effect above will handle it naturally as allImages grows.
           } else if (
             message.type === "UPDATE_IMAGES" &&
             Array.isArray(message.data)
           ) {
+            // Update LocalStorage
+            localStorage.setItem(
+              "slideshow_images",
+              JSON.stringify(message.data),
+            );
+
             const newImages = message.data.map((img: ImageData, i: number) =>
-              processImage(img, i)
+              processImage(img, i),
             );
             setAllImages(newImages);
-            
+
             // Preload all updated images
             newImages.forEach((img: ImageWithVisuals) => {
               preloadImage(`${apiUrl}${img.url}`);
@@ -223,7 +268,7 @@ export default function Slideshow({ apiUrl, wsUrl }: SlideshowProps) {
       wsRef.current.onclose = (event) => {
         console.log("WebSocket disconnected", event.code, event.reason);
         isConnected = false;
-        
+
         // Clean up current connection
         if (wsRef.current) {
           wsRef.current.onopen = null;
@@ -236,8 +281,10 @@ export default function Slideshow({ apiUrl, wsUrl }: SlideshowProps) {
         // Attempt to reconnect with exponential backoff
         if (reconnectAttempts < maxReconnectAttempts) {
           const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
-          console.log(`Reconnecting in ${delay}ms (attempt ${reconnectAttempts + 1}/${maxReconnectAttempts})`);
-          
+          console.log(
+            `Reconnecting in ${delay}ms (attempt ${reconnectAttempts + 1}/${maxReconnectAttempts})`,
+          );
+
           reconnectTimeoutRef.current = setTimeout(() => {
             reconnectAttempts++;
             connectWebSocket();
@@ -266,13 +313,15 @@ export default function Slideshow({ apiUrl, wsUrl }: SlideshowProps) {
     };
   }, [wsUrl, apiUrl]);
 
-  // Actualizar contador (current / total) en el DOM, reiniciando al llegar al final
+  // Actualizar contador (current / total) en el DOM
   useEffect(() => {
     const updateCounter = () => {
       const currentEl = document.getElementById("current-count");
       const totalEl = document.getElementById("total-count");
 
       const total = allImages.length;
+      // Current is (index % total) + 1.
+      // If cycleCountRef is 0 (new image), current is 1. Correct.
       const current = total > 0 ? (cycleCountRef.current % total) + 1 : 0;
 
       if (currentEl) currentEl.textContent = String(current);
@@ -282,10 +331,56 @@ export default function Slideshow({ apiUrl, wsUrl }: SlideshowProps) {
     // Actualizar inmediatamente
     updateCounter();
 
-    // Actualizar cada vez que cambia displayedImages (que es cuando cambia la imagen)
+    // Actualizar cada vez que cambia displayedImages
     const interval = setInterval(updateCounter, 500);
     return () => clearInterval(interval);
   }, [displayedImages, allImages.length]);
+
+  const renderConfetti = () => {
+    // Show confetti only if there is a notification
+    if (!notification) return null;
+
+    const pieces = Array.from({ length: 200 });
+    const colors = [
+      "#f97316",
+      "#facc15",
+      "#22c55e",
+      "#3b82f6",
+      "#ec4899",
+      "#a855f7",
+    ];
+
+    return (
+      <div
+        key={`confetti-${notification}`} // Re-render confetti on new notification
+        className="pointer-events-none absolute inset-0 overflow-hidden"
+        style={{ zIndex: 110 }} // Higher zIndex to cover everything
+      >
+        {pieces.map((_, index) => {
+          const left = Math.random() * 100;
+          const delay = Math.random() * 0.5;
+          const duration = 1.2 + Math.random() * 0.8;
+          const size = 25 + Math.random() * 4;
+          const color = colors[index % colors.length];
+
+          return (
+            <span
+              key={index}
+              className="confetti-piece"
+              style={{
+                left: `${left}%`,
+                animationDelay: `${delay}s`,
+                animationDuration: `${duration}s`,
+                width: `${size}px`,
+                height: `${size * 0.4}px`,
+                backgroundColor: color,
+              }}
+            />
+          );
+        })}
+      </div>
+    );
+  };
 
   if (allImages.length === 0) {
     return (
@@ -294,6 +389,9 @@ export default function Slideshow({ apiUrl, wsUrl }: SlideshowProps) {
           message={notification}
           onClose={() => setNotification(null)}
         />
+        {/* Render confetti if notification is present (even in loading state) */}
+        {notification && renderConfetti()}
+
         <div className="glass rounded-2xl p-8 text-center">
           <div className="animate-pulse">
             <svg
@@ -324,51 +422,6 @@ export default function Slideshow({ apiUrl, wsUrl }: SlideshowProps) {
   const activeImage =
     activeImageIndex !== null ? displayedImages[activeImageIndex] : null;
 
-  const renderConfetti = () => {
-    if (!ENABLE_CONFETTI) return null;
-
-    const pieces = Array.from({ length: 200 });
-    const colors = [
-      "#f97316",
-      "#facc15",
-      "#22c55e",
-      "#3b82f6",
-      "#ec4899",
-      "#a855f7",
-    ];
-
-    return (
-      <div
-        key={displayedImages.length}
-        className="pointer-events-none absolute inset-0 overflow-hidden"
-        style={{ zIndex: 40 }}
-      >
-        {pieces.map((_, index) => {
-          const left = Math.random() * 100;
-          const delay = Math.random() * 0.5;
-          const duration = 1.2 + Math.random() * 0.8;
-          const size = 25 + Math.random() * 4;
-          const color = colors[index % colors.length];
-
-          return (
-            <span
-              key={index}
-              className="confetti-piece"
-              style={{
-                left: `${left}%`,
-                animationDelay: `${delay}s`,
-                animationDuration: `${duration}s`,
-                width: `${size}px`,
-                height: `${size * 0.4}px`,
-                backgroundColor: color,
-              }}
-            />
-          );
-        })}
-      </div>
-    );
-  };
-
   return (
     <div
       ref={containerRef}
@@ -378,60 +431,61 @@ export default function Slideshow({ apiUrl, wsUrl }: SlideshowProps) {
         message={notification}
         onClose={() => setNotification(null)}
       />
+
       {displayedImages.map((img, idx) => {
         // Las imágenes más antiguas (índice bajo) tienen menos opacity
-        const opacity = idx === 0 ? 0 : (idx / displayedImages.length);
-        
+        const opacity = idx === 0 ? 0 : idx / displayedImages.length;
+
         return (
-        <div
-          key={img.instanceId}
-          className="absolute transition-opacity duration-700"
-          style={{
-            zIndex: img.zIndex,
-            transform: `translate(${img.offsetX}px, ${img.offsetY}px)`,
-            opacity: idx === 0 ? 0.3 : 1,
-          }}
-        >
-          <div className="animate-drop-in flex justify-center items-center w-full h-full">
-            <div
-              className="relative bg-white shadow-[0_24px_60px_rgba(0,0,0,0.55)] rounded-md transition-transform hover:scale-105 duration-300 flex flex-col"
-              style={{
-                transform: `rotate(${img.rotation}deg)`,
-                width: "fit-content",
-                maxWidth: "95vw",
-                maxHeight: "95vh",
-              }}
-            >
-              <div className="w-full mx-auto pt-4 px-4 pb-6 flex-1 flex flex-col justify-center">
-                <div className="mx-auto overflow-hidden bg-gray-100 border border-gray-200 flex justify-center items-center">
-                  <img
-                    src={`${apiUrl}${img.url}`}
-                    alt={img.nombre}
-                    className="w-auto h-auto max-h-[70vh] object-contain"
-                  />
-                </div>
-
-                {
-                  <div className="mt-5 pt-3 border-t border-gray-100 text-center">
-                    <p
-                      className="text-gray-500 text-3xl font-medium"
-                      style={{
-                        fontFamily:
-                          '"Bilbo", "Chalkboard SE", "Marker Felt", sans-serif',
-                      }}
-                    >
-                      {img.texto ? `"${img.texto}"` : ""}
-                    </p>
-
-                    <p className="text-md font-bold leading-tight text-gray-500">
-                      {img.nombre}
-                    </p>
+          <div
+            key={img.instanceId}
+            className="absolute transition-opacity duration-700"
+            style={{
+              zIndex: img.zIndex,
+              transform: `translate(${img.offsetX}px, ${img.offsetY}px)`,
+              opacity: idx === 0 ? 0.3 : 1,
+            }}
+          >
+            <div className="animate-drop-in flex justify-center items-center w-full h-full">
+              <div
+                className="relative bg-white shadow-[0_24px_60px_rgba(0,0,0,0.55)] rounded-md transition-transform hover:scale-105 duration-300 flex flex-col"
+                style={{
+                  transform: `rotate(${img.rotation}deg)`,
+                  width: "fit-content",
+                  maxWidth: "95vw",
+                  maxHeight: "95vh",
+                }}
+              >
+                <div className="w-full mx-auto pt-4 px-4 pb-6 flex-1 flex flex-col justify-center">
+                  <div className="mx-auto overflow-hidden bg-gray-100 border border-gray-200 flex justify-center items-center">
+                    <img
+                      src={`${apiUrl}${img.url}`}
+                      alt={img.nombre}
+                      className="w-auto h-auto max-h-[70vh] object-contain"
+                    />
                   </div>
-                }
+
+                  {
+                    <div className="mt-5 pt-3 border-t border-gray-100 text-center">
+                      <p
+                        className="text-gray-500 text-3xl font-medium"
+                        style={{
+                          fontFamily:
+                            '"Bilbo", "Chalkboard SE", "Marker Felt", sans-serif',
+                        }}
+                      >
+                        {img.texto ? `"${img.texto}"` : ""}
+                      </p>
+
+                      <p className="text-md font-bold leading-tight text-gray-500">
+                        {img.nombre}
+                      </p>
+                    </div>
+                  }
+                </div>
               </div>
             </div>
           </div>
-        </div>
         );
       })}
 
@@ -455,7 +509,8 @@ export default function Slideshow({ apiUrl, wsUrl }: SlideshowProps) {
         </div>
       )}
 
-      {ENABLE_CONFETTI && renderConfetti()}
+      {/* Confetti ahora condicionado a la notificación (dentro de la función renderConfetti) */}
+      {renderConfetti()}
 
       <style>{`
         .animate-drop-in {
