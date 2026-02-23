@@ -114,18 +114,19 @@ export default function Slideshow({ apiUrl, wsUrl }: SlideshowProps) {
       const nextIndex = cycleCountRef.current % totalImages;
       const baseImage = allImages[nextIndex];
       
-      // Crear nueva imagen visual
+      // Crear nueva imagen visual con zIndex más alto
       const visual = processImage(baseImage, cycleCountRef.current);
       
       setDisplayedImages((prev) => {
-        // Agregar la nueva imagen siempre
-        const newPile = [...prev, visual];
+        // Agregar la nueva imagen siempre con zIndex más alto
+        const newPile = [...prev, { ...visual, zIndex: prev.length }];
         
-        // Mantener solo las últimas 5 imágenes
+        // Mantener solo las últimas 5 imágenes, con zIndex de 0 a 4
         if (newPile.length > 5) {
-          return newPile.slice(-5);
+          return newPile.slice(-5).map((img, idx) => ({ ...img, zIndex: idx }));
         }
-        return newPile;
+        // Recalcular zIndex para que el más nuevo tenga el mayor
+        return newPile.map((img, idx) => ({ ...img, zIndex: idx }));
       });
       
       // Incrementar el contador para la siguiente imagen
@@ -265,14 +266,11 @@ export default function Slideshow({ apiUrl, wsUrl }: SlideshowProps) {
     const totalEl = document.getElementById("total-count");
 
     const total = allImages.length;
-    const current =
-      activeImageIndex !== null && total > 0
-        ? (activeImageIndex % total) + 1
-        : 0;
+    const current = total > 0 ? (cycleCountRef.current % total) + 1 : 0;
 
     if (currentEl) currentEl.textContent = String(current);
     if (totalEl) totalEl.textContent = String(total);
-  }, [activeImageIndex, allImages.length]);
+  }, [cycleCountRef.current, allImages.length]);
 
   if (allImages.length === 0) {
     return (
@@ -365,13 +363,18 @@ export default function Slideshow({ apiUrl, wsUrl }: SlideshowProps) {
         message={notification}
         onClose={() => setNotification(null)}
       />
-      {displayedImages.map((img) => (
+      {displayedImages.map((img, idx) => {
+        // Las imágenes más antiguas (índice bajo) tienen menos opacity
+        const opacity = idx === 0 ? 0 : (idx / displayedImages.length);
+        
+        return (
         <div
           key={img.instanceId}
-          className="absolute"
+          className="absolute transition-opacity duration-700"
           style={{
             zIndex: img.zIndex,
             transform: `translate(${img.offsetX}px, ${img.offsetY}px)`,
+            opacity: idx === 0 ? 0.3 : 1,
           }}
         >
           <div className="animate-drop-in flex justify-center items-center w-full h-full">
@@ -414,7 +417,8 @@ export default function Slideshow({ apiUrl, wsUrl }: SlideshowProps) {
             </div>
           </div>
         </div>
-      ))}
+        );
+      })}
 
       {activeImage && (
         <div
