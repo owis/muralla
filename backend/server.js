@@ -60,23 +60,32 @@ app.use(
         "http://muralla.creceideas.cl",
         "http://localhost:4321",
         "http://localhost:3000",
+        "http://localhost:4325",
       ];
       // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) return callback(null, true);
-      
-      if (allowedOrigins.indexOf(origin) !== -1 || process.env.FRONTEND_URL === origin) {
+
+      if (
+        allowedOrigins.indexOf(origin) !== -1 ||
+        process.env.FRONTEND_URL === origin
+      ) {
         callback(null, true);
       } else {
         console.log("Blocked by CORS:", origin);
         // For development, you might want to temporarily allow all:
-        // callback(null, true); 
-        callback(new Error('Not allowed by CORS'));
+        // callback(null, true);
+        callback(new Error("Not allowed by CORS"));
       }
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
-  })
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Requested-With",
+      "Accept",
+    ],
+  }),
 );
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
