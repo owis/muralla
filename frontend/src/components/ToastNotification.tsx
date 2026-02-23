@@ -10,7 +10,7 @@ export default function ToastNotification({ message, onClose }: ToastProps) {
     if (message) {
       const timer = setTimeout(() => {
         onClose();
-      }, 6000);
+      }, 3000);
       return () => clearTimeout(timer);
     }
   }, [message, onClose]);
@@ -18,7 +18,7 @@ export default function ToastNotification({ message, onClose }: ToastProps) {
   if (!message) return null;
 
   return (
-    <div className="fixed top-4 right-4 z-[100] animate-slide-in-right">
+    <div className="fixed top-1/2 right-4 z-[100] -translate-y-1/2 animate-slide-in-right">
       <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-4 rounded-xl shadow-[0_0_20px_rgba(139,92,246,0.5)] flex items-center gap-4 border border-white/20 backdrop-blur-sm max-w-sm">
         <div className="bg-white/20 p-2 rounded-full flex-shrink-0">
           <span className="text-xl">📸</span>
