@@ -18,13 +18,13 @@ export default function ToastNotification({ message, onClose }: ToastProps) {
   if (!message) return null;
 
   return (
-    <div className="fixed top-8 right-8 z-[100] animate-slide-in-right">
-      <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-4 rounded-xl shadow-[0_0_20px_rgba(139,92,246,0.5)] flex items-center gap-4 border border-white/20 backdrop-blur-sm">
-        <div className="bg-white/20 p-2 rounded-full">
+    <div className="fixed top-4 right-4 z-[100] animate-slide-in-right">
+      <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-4 rounded-xl shadow-[0_0_20px_rgba(139,92,246,0.5)] flex items-center gap-4 border border-white/20 backdrop-blur-sm max-w-sm">
+        <div className="bg-white/20 p-2 rounded-full flex-shrink-0">
           <span className="text-xl">📸</span>
         </div>
-        <div>
-          <p className="font-bold text-lg">{message}</p>
+        <div className="flex-1 min-w-0">
+          <p className="font-bold text-lg truncate">{message}</p>
           <p className="text-xs text-white/80">¡Nueva foto recibida!</p>
         </div>
       </div>

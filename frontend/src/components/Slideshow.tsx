@@ -87,6 +87,9 @@ export default function Slideshow({ apiUrl, wsUrl }: SlideshowProps) {
           );
           setAllImages(processedImages);
           
+          // Reset cycle counter when loading images
+          cycleCountRef.current = 0;
+          
           // Preload all images into cache
           processedImages.forEach((img: ImageWithVisuals) => {
             preloadImage(`${apiUrl}${img.url}`);
@@ -188,6 +191,9 @@ export default function Slideshow({ apiUrl, wsUrl }: SlideshowProps) {
               ...prev,
               processImage(message.data, prev.length),
             ]);
+
+            // Reset cycle counter when new image is added
+            cycleCountRef.current = 0;
 
             // Mostrar notificación
             const senderName = message.data.nombre || "Alguien";
